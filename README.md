@@ -39,3 +39,11 @@ are connected by cable (I connected arduino and keypad/buzzer/LED/RFID by long 2
 
 In fritzing file I had done only electical scheme and bewadboard (very ugly, don't beat me).
 
+## About esp8266
+
+I've added it for the future. It is connected to serial console, so you can just connect it as shown
+and with proper firmware on esp8266 you can send logs to remote server.
+
+In plans (do not rely on me, they are looooong plans) is to add feature to open lock via command from serial (i.e. esp8266). And to add esp8266 firmware... If you add it, please, do pullrequest?
+
+
