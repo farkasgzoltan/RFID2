@@ -47,6 +47,11 @@ void do_close(){
     digitalWrite(OPEN_PIN, LOW);
 }
 
+void clear_all();
+void do_program(const char *entered);
+void write_open_seq(const char *seq);
+void read_open_seq();
+
 /*
  * *************************************************
  * 
