@@ -25,6 +25,9 @@
  *  pins *..D -> A2-A5,D2-D5
  * 
  * D6 - serial direction
+ * D7 - buzzer
+ * D8 = RED LED
+ * D9 = GREEN LED
  */
 
 //#define DEBUG
@@ -143,7 +146,6 @@ void loop() {
     send_it(str);
     send_it0("Buffer=");
     send_it(entered);
-    
   }
   //return;
   // check for card bringing

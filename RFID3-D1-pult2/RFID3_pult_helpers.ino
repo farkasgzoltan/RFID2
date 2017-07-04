@@ -1,21 +1,12 @@
 void process_extra(const char *);
 void process_message(const char *);
 
-char secret_open[]="1234";    //reverse! real sequence will be 4321
-char secret_new[]="x*5544*";   // add card !reverse!
-char secret_del[]="x*8899*";   // del card !reverse!
-char secret_clear[]="x*0000*"; // del all !reverse!
-
-#define NUM_CODES 16
-#define KEY_PIN A0
-
 #define RED D8
 #define GREEN D9
 #define BLUE D9
 
-#define OPENER D7
+#define BUZZER D7
 
-#define BUZZER A0
 #define NOTE1 NOTE_A2
 #define BUZ_TIME 50
 
@@ -122,16 +113,6 @@ char readdata(void)          //main function
   return 'X';                  // if no button is pressed, return X
 }
 
-void read_open_seq(){
-  for(int i=0;i<SEQ_LEN;++i)
-    EEPROM.get(OPEN_ADDR+i,secret_open[i]);
-}
-
-void write_open_seq(const char *seq){
-  for(int i=0;i<SEQ_LEN;++i)
-    EEPROM.put(OPEN_ADDR+i,secret_open[i]);
-}
-
 // key pressed, add it to buffer
 void add_key(char key){
   //shift!
@@ -199,6 +180,7 @@ void tone1(){
     noTone(BUZZER);  
 }
 
+/*
 // indicate fail (red led flash, two beeps)
 void ind_failed(){
   send_it("Failed!");
@@ -211,19 +193,10 @@ void ind_failed(){
   analogWrite(RED, 0);
 }
 
-// erase all cards!!!
-void clear_all(){
-  EEPROM.put(0, 0L);// zero cards
-  for(int i=0;i<NUM_CODES;++i){
-    EEPROM.put((i+1)*ulen, NONVALID);
-  }
-  num_codes=0;
-}
-
 // add new card
 void add_code(unsigned long id){
   char key='\0';
-  
+
   ind_get_index();
 
   for(key=readdata();key=='X';){
@@ -296,6 +269,7 @@ void new_seq(){
   send_it0("New reversed sequence: ");
   send_it(secret_open);
 }
+*/
 
 //// open the door!!!
 //void do_open(){
@@ -311,6 +285,7 @@ void new_seq(){
 //}
 
 
+/*
 void do_program(){
   if(entered[0]=='*'){  //add card
     //add card
@@ -334,6 +309,7 @@ void do_program(){
     mode=Waiting;  
   }
 }
+*/
 
 void check_card(MFRC522 &mfrc522){
   long int uidDec = 0L;
@@ -381,7 +357,7 @@ void checkInput(){
         process_extra(buf);
         //do_send("zzz");
       }
-      i=0;        
+      i=0;
     }
   }
 }

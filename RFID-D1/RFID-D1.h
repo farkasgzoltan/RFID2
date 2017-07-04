@@ -11,10 +11,10 @@
 #undef SOFT_SERIAL
 
 
-#define DE D2
-#define RE D3
-#define OPEN_PIN BUILTIN_LED
-#define BUZZER D4
+#define DE D1
+#define RE D1
+#define OPEN_PIN D4
+#define KEY_PIN D2
 #define SPEED 9600
 
 
@@ -27,3 +27,10 @@
 
 #define STARTER '_'
 #define ENDER '~'
+
+#define Waiting 0
+#define NewCard 1
+#define Program 2
+#define Other   3
+
+#define SEQ_LEN 4

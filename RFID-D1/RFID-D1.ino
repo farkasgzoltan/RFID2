@@ -15,6 +15,7 @@
 
 static char buffer[BUF_SIZE];
 
+static int mode=
 /*
 #define MQTT_SERV "m21.cloudmqtt.com"
 #define MQTT_PORT 1883
@@ -22,6 +23,18 @@ static char buffer[BUF_SIZE];
 #define MQTT_PASS "qweqweqwe"
 #define MQTT_TOPC "logTopic"
 */
+
+char secret_open[SEQ_LEN]="1234";    //reverse! real sequence will be 4321
+//char secret_new[]="*5544*";   // add card !reverse!
+//char secret_del[]="*8899*";   // del card !reverse!
+//char secret_clear[]="*0000*"; // del all !reverse!
+
+#define NUM_CODES 16
+emun fazes={ AddCardStart, AddCardNumber, DelCardStart, DelCardNumber,
+             Open, None};
+#define BAD_CARD 879961
+#define IND_INTERVAL 300
+
 
 void do_open(){
     digitalWrite(OPEN_PIN, HIGH);
@@ -107,6 +120,7 @@ void setup() {
   do_log("Start!\n");
   do_log_send();
 
+  read_open_seq();
 }
 
 void setup_wifi() {
@@ -150,7 +164,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void reconnect() {
   //return;
-  
+
   // Loop until we're reconnected
   while (!client.connected()) {
     debug0("Attempting MQTT connection...");
@@ -219,14 +233,32 @@ void process_message(const char *s){
         check_code(entered);
       }
       break;
-    case NewCard:
-      add_code(entered);
-      mode=Waiting;
-      break;
+    case Program:
+      do_program(entered);
     default:
       send_it0("!invalid mode=");
       send_it(mode);
   }
+}
+
+void ind_success(){
+  do_send("+p+g");
+  delay(IND_INTERVAL);
+  ind_none();
+}
+
+void ind_cancel(){
+  do_send("+p+r");
+  delay(IND_INTERVAL);
+  ind_none();
+}
+
+void ind_input(){
+  do_send("+r+g");
+}
+
+void ind_none(){
+  do_send("-r-g-b");
 }
 
 void check_kbd(const char *entered){
@@ -266,7 +298,7 @@ void checkInput(){
         process_extra(buf);
         //do_send("zzz");
       }
-      i=0;        
+      i=0;
     }
   }
 }
@@ -328,9 +360,132 @@ void loop() {
     mode=Program;
     return;
   }
-    
-  if(mode==Program)
-    return do_program();
+}
 
+void read_open_seq(){
+  for(int i=0;i<SEQ_LEN;++i)
+    EEPROM.get(OPEN_ADDR+i,secret_open[i]);
+}
+
+void write_open_seq(const char *seq){
+  for(int i=0;i<SEQ_LEN;++i)
+    EEPROM.put(OPEN_ADDR+i,secret_open[i]);
+}
+
+
+void do_program(const char *entered){
+  static int faze=None;
+  static int index;
+
+  switch(faze){
+    case None:
+      switch(entered[0]){
+        case '*':  //add card
+          //add card
+          faze=AddCardStart;
+          ind_input();
+          break;
+        case '#':
+          //delete card
+          faze=DefCardStart;
+          ind_input();
+          break;
+        case  '0':
+          // del all cards
+          clear_all();
+          mode=Waiting;
+          break;
+        case 'D': // new open sequence
+          faze=Open;
+          index=0;
+          ind_input();
+          break;
+        default:
+          mode=Waiting;
+         // indication...
+      }
+      break;
+    case AddCardStart:
+      tone1();
+      if(entered[0]=='*' || entered[0]=='#'){
+        ind_cancel();
+        mode=Waiting;
+        faze=None;
+        ind_none();
+        return;
+      }
+      index=entered[0]-'0';
+      if(index>9){
+        index=index+'0'-'A'+10;
+      }
+      index+=1;
+      faze=AddCardNumber;
+      break;
+    case AddCardNumber:
+      if(entered[0]=='*' || entered[0]=='#'){
+        ind_cancel();
+        mode=Waiting;
+        faze=None;
+        ind_none();
+        return;
+      }
+      if(index>num_codes)
+        num_codes=index;
+      EEPROM.put(index*ulen,entered);
+      ind_success();
+      mode=Waiting;
+      faze=None;
+    case DelCardStart:
+      tone1();
+      if(entered[0]=='*' || entered[0]=='#'){
+        ind_cancel();
+        mode=Waiting;
+        faze=None;
+        ind_none();
+        return;
+      }
+      index=entered[0]-'0';
+      if(index>9){
+        index=index+'0'-'A'+10;
+      }
+      index+=1;
+      faze=DelCardNumber;
+      break;
+    case DelCardNumber:
+      if(entered[0]=='*' || entered[0]=='#'){
+        ind_cancel();
+        mode=Waiting;
+        faze=None;
+        ind_none();
+        return;
+      }
+      if(index>num_codes)
+        num_codes=index;
+      EEPROM.put(key*ulen,BAD_CARD);
+      ind_success();
+      mode=Waiting;
+      faze=None;
+    case Open: // next leter of new code
+      secret_open[index]=entered[0];
+      index+=1;
+      if(index>=SEQ_LEN){
+        mode=Waiting;
+        faze=None;
+        ind_success();
+        write_open_seq(secret_open);
+      }
+      break;
+    default:
+      mode=Waiting;
+  }
+}
+
+// erase all cards!!!
+void clear_all(){
+  EEPROM.put(0, 0L);// zero cards
+  for(int i=0;i<NUM_CODES;++i){
+    EEPROM.put((i+1)*ulen, BAD_CARD);
+  }
+  num_codes=0;
 }
 
